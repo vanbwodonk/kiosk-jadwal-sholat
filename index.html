@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="google" content="notranslate">
+    <title>Musholla An-Nahl - Jadwal Sholat (Surabaya)</title>
+    <!-- Adhan.js library -->
+    <script src="https://cdn.jsdelivr.net/npm/adhan@4.5.0/dist/adhan.umd.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            background: linear-gradient(145deg, #0a0f1a 0%, #0c1320 100%);
+            font-family: 'Segoe UI', 'Poppins', 'Inter', system-ui, sans-serif;
+            color: #f0f3f8;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0; /* remove padding so container can reach edges */
+            overflow: hidden;
+        }
+
+        .kiosk-container {
+            max-width: none; /* allow full width */
+            width: 98vw; /* span full viewport width */
+            height: 98vh; /* span full viewport height */
+            background: rgba(10, 18, 28, 0.65);
+            backdrop-filter: blur(2px);
+            border-radius: 48px;
+            padding: 20px 32px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 215, 150, 0.2);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* Header: Musholla name and time on same line */
+        .masjid-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 12px;
+            border-bottom: 2px solid rgba(212, 175, 55, 0.4);
+            padding-bottom: 12px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .masjid-name {
+            font-size: 2.4rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #f5e7c8, #e4c580);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        .current-time-lg {
+            font-size: 2.2rem;
+            font-weight: 600;
+            font-family: monospace;
+            letter-spacing: 2px;
+            color: #ffdfa5;
+        }
+
+        /* Next Prayer section - no outer box */
+        .next-prayer-section {
+            text-align: center;
+            margin: 12px 0 20px;
+        }
+        .next-label-line {
+            font-size: 2.2rem; /* larger label */
+            letter-spacing: 2px;
+            color: #cfb87c;
+            margin-bottom: 18px;
+        }
+        .next-name {
+            font-size: 4.6rem; /* make next prayer name more prominent */
+            font-weight: 900;
+            background: linear-gradient(135deg, #ffd966, #ffb347);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            display: inline;
+            letter-spacing: 1px;
+        }
+        /* Bigger countdown boxes */
+        .countdown-boxes {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 28px;
+            margin-top: 22px; /* emphasize spacing under next-name */
+        }
+        .time-box {
+            background: #000000cc;
+            border-radius: 28px;
+            padding: 26px 30px; /* larger boxes */
+            min-width: 150px;
+            text-align: center;
+            backdrop-filter: blur(4px);
+            border: 1px solid #ffdd99;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .time-number {
+            font-size: 5.2rem; /* bigger countdown numbers */
+            font-weight: 900;
+            font-family: 'Fira Mono', monospace;
+            color: #ffecb3;
+            line-height: 1;
+        }
+        .time-label {
+            font-size: 1.05rem; /* slightly larger labels */
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #cfb87c;
+            margin-top: 10px;
+        }
+        .colon {
+            font-size: 5.2rem;
+            font-weight: 800;
+            color: #ffdd99;
+        }
+
+        .date-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            flex-wrap: wrap;
+            background: rgba(0,0,0,0.35);
+            padding: 10px 22px;
+            border-radius: 40px;
+            margin: 26px 0 18px; /* move calendar a bit lower to give room for countdown */
+            font-size: 1.05rem;
+            gap: 12px;
+        }
+        .greg-date { font-weight: 500; color: #e2e8f0; }
+        .hijri-date {
+            font-weight: 600;
+            background: #2a2e3f;
+            padding: 4px 16px;
+            border-radius: 40px;
+            color: #ffdd99;
+            font-size: 0.9rem;
+        }
+
+        /* 6 prayer cards in a single row */
+        .prayer-grid {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 14px;
+            margin: 30px 0 24px; /* push prayer cards further down */
+        }
+        .prayer-card {
+            background: rgba(20, 28, 38, 0.85);
+            backdrop-filter: blur(4px);
+            border-radius: 24px;
+            padding: 10px 6px; /* a bit more padding */
+            text-align: center;
+            border: 1px solid rgba(255, 215, 120, 0.25);
+            transition: all 0.18s ease;
+        }
+        /* Highlighted prayer card - next prayer */
+        .prayer-card.highlight {
+            background: rgba(212, 175, 55, 0.35);
+            border: 3px solid #ffd966;
+            box-shadow: 0 0 12px rgba(255, 200, 80, 0.4);
+        }
+        .prayer-name {
+            font-size: 1.18rem; /* larger prayer name */
+            font-weight: 800;
+            text-transform: uppercase;
+            color: #ffdfa5;
+            margin-bottom: 8px;
+        }
+        .prayer-time {
+            font-size: 1.45rem; /* larger time */
+            font-weight: 700;
+            font-family: monospace;
+            background: #00000044;
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 30px;
+            margin: 6px 0;
+        }
+        .iqama-time {
+            font-size: 0.95rem; /* bigger iqama */
+            color: #b9d0f0;
+            margin-top: 6px;
+            border-top: 1px dashed #d4af37;
+            padding-top: 6px;
+            display: inline-block;
+            width: 90%;
+        }
+        .iqama-label { font-weight: 500; color: #c9b36b; }
+
+        .footer-verse {
+            margin-top: 12px;
+            text-align: center;
+            border-top: 1px solid rgba(212, 175, 55, 0.3);
+            padding-top: 12px;
+            color: #b9c7db;
+            font-size: 0.8rem;
+        }
+        .verse-text {
+            font-style: italic;
+            font-size: 0.85rem;
+            max-width: 85%;
+            margin: 0 auto 6px;
+        }
+        .credit { font-size: 0.7rem; color: #8f9bb3; }
+
+        /* Responsive adjustments */
+        @media (max-height: 950px) {
+            .kiosk-container { padding: 16px 24px; }
+            .masjid-name { font-size: 2rem; }
+            .current-time-lg { font-size: 1.8rem; }
+            .next-label-line { font-size: 1.4rem; margin-bottom: 12px; }
+            .next-name { font-size: 2.8rem; }
+            .time-box { padding: 12px 16px; min-width: 100px; }
+            .time-number { font-size: 3rem; }
+            .colon { font-size: 3rem; }
+            .prayer-name { font-size: 0.85rem; }
+            .prayer-time { font-size: 1rem; }
+            .iqama-time { font-size: 0.7rem; }
+        }
+        @media (max-width: 1400px) {
+            .prayer-grid { gap: 8px; }
+            .prayer-card { padding: 6px 2px; }
+            .prayer-name { font-size: 0.85rem; }
+            .prayer-time { font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+<div class="kiosk-container">
+    <div class="masjid-header">
+        <div class="masjid-name">🕌 Musholla An - Nahl</div>
+        <div class="current-time-lg" id="liveClock">--:--:--</div>
+    </div>
+
+    <!-- Next Prayer section - no outer box -->
+    <div class="next-prayer-section">
+        <div class="next-label-line">
+            Waktu Sholat Berikutnya: <span class="next-name" id="nextPrayerName">MAGHRIB</span>
+        </div>
+        <div class="countdown-boxes">
+            <div class="time-box">
+                <div class="time-number" id="hours">00</div>
+                <div class="time-label">Jam</div>
+            </div>
+            <span class="colon">:</span>
+            <div class="time-box">
+                <div class="time-number" id="minutes">00</div>
+                <div class="time-label">Menit</div>
+            </div>
+            <span class="colon">:</span>
+            <div class="time-box">
+                <div class="time-number" id="seconds">00</div>
+                <div class="time-label">Detik</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="date-row">
+        <div class="greg-date" id="gregorianDate">Senin, 26 Mei 2025</div>
+        <div class="hijri-date" id="hijriDate">28 Dzulqaidah 1446</div>
+    </div>
+
+    <!-- 6 prayer cards in a single row -->
+    <div class="prayer-grid" id="prayerTimesGrid"></div>
+
+    <div class="footer-verse">
+        <div class="verse-text">✨ “Sesungguhnya shalat itu adalah kewajiban yang ditentukan waktunya atas orang-orang yang beriman.” ✨<br>— QS. An-Nisa (4:103)</div>
+<!--         <div class="credit">Musholla Pulse TV v1.0 | Jadwal sholat untuk Surabaya, Indonesia (Metode Kemenag: Subuh 20°, Isya 18°)</div> -->
+    </div>
+</div>
+
+<script>
+    // ==================== KONFIGURASI: SURABAYA, INDONESIA ====================
+    // Musholla An-Nahl Loc : -7.428112389489844, 112.69896421272199
+    const LATITUDE = -7.428112389489844;
+    const LONGITUDE = 112.69896421272199;
+    // Standar Kemenag RI: Subuh 20°, Isya 18°
+    const FAJR_ANGLE = 20;
+    const ISHA_ANGLE = 18;
+
+    // Nama sholat dalam bahasa Indonesia untuk tampilan
+    const PRAYER_NAMES_ID = {
+        "Fajr": "Subuh",
+        "Sunrise": "Syuruq",
+        "Dhuhr": "Dzuhur",
+        "Asr": "Ashar",
+        "Maghrib": "Maghrib",
+        "Isha": "Isya"
+    };
+    // Urutan internal (Inggris) untuk perhitungan
+    const PRAYER_NAMES_EN = ["Fajr", "Sunrise", "Dhuhr", "Asr", "Maghrib", "Isha"];
+    const OBLIGATORY_EN = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
+
+    // Iqama offsets dalam menit (dapat disesuaikan)
+    const IQAMA_OFFSETS = {
+        "Fajr": 15,
+        "Sunrise": null,
+        "Dhuhr": 20,
+        "Asr": 20,
+        "Maghrib": 5,
+        "Isha": 10
+    };
+
+    // Helper: format 24 jam "HH:MM"
+    function formatPrayerTime24(date) {
+        if (!date) return '--:--';
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        return `${hours}:${minutes}`;
+    }
+
+    // Waktu sekarang dengan detik "HH:MM:SS"
+    function formatCurrentTime24(date) {
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        const seconds = date.getSeconds().toString().padStart(2, '0');
+        return `${hours}:${minutes}:${seconds}`;
+    }
+
+    // -- Time simulation helper --
+    // To simulate time for testing, set either:
+    // - URL param: ?sim=2026-03-29T22:30:00
+    // - Global: window.SIMULATED_NOW = '2026-03-29T22:30:00'
+    function getNow() {
+        try {
+            if (typeof window !== 'undefined' && window.SIMULATED_NOW) {
+                const d = new Date(window.SIMULATED_NOW);
+                if (!isNaN(d)) return d;
+            }
+            if (typeof window !== 'undefined') {
+                const sp = new URL(window.location.href).searchParams;
+                const sim = sp.get('sim');
+                if (sim) {
+                    const d2 = new Date(sim);
+                    if (!isNaN(d2)) return d2;
+                }
+            }
+        } catch (e) {
+            console.warn('getNow() simulation parse error', e);
+        }
+        return new Date();
+    }
+
+    function getIqamaTime(prayerTime, prayerNameEn) {
+        if (!prayerTime) return null;
+        const offset = IQAMA_OFFSETS[prayerNameEn];
+        if (offset === undefined || offset === null) return null;
+        return new Date(prayerTime.getTime() + offset * 60000);
+    }
+
+    function getHijriFormatted() {
+        const today = getNow();
+        // Format Hijri dengan nama bulan Indonesia (sederhana mapping)
+        const formatter = new Intl.DateTimeFormat('en-TN-u-ca-islamic', { day: 'numeric', month: 'numeric', year: 'numeric' });
+        let parts = formatter.formatToParts(today);
+        let day = '', monthNum = '', year = '';
+        for (let part of parts) {
+            if (part.type === 'day') day = part.value;
+            if (part.type === 'month') monthNum = part.value;
+            if (part.type === 'year') year = part.value;
+        }
+        // Mapping bulan Hijriah ke bahasa Indonesia
+        const hijriMonths = [
+            "Muharram", "Safar", "Rabiul Awal", "Rabiul Akhir", "Jumadil Awal", "Jumadil Akhir",
+            "Rajab", "Sya'ban", "Ramadhan", "Syawal", "Dzulqaidah", "Dzulhijjah"
+        ];
+        let monthName = hijriMonths[parseInt(monthNum) - 1] || "";
+        return `${day} ${monthName} ${year}`;
+    }
+
+    function getGregorianFormatted() {
+        const today = getNow();
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        let dateStr = today.toLocaleDateString('id-ID', options);
+        // Kapitalisasi awal
+        return dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+    }
+
+    // ---------- Perhitungan Adhan (metode Kemenag) ----------
+    // Local fallback using Adhan.js (kept for reliability)
+    function getPrayerTimesWithAdhan(date) {
+        try {
+            const params = new Adhan.CalculationParameters('Kemenag', FAJR_ANGLE, ISHA_ANGLE);
+            const coordinates = new Adhan.Coordinates(LATITUDE, LONGITUDE);
+            const prayerTimes = new Adhan.PrayerTimes(coordinates, date, params);
+            return prayerTimes;
+        } catch (e) {
+            console.error("Adhan error:", e);
+            return null;
+        }
+    }
+
+    // ---------- Online API: Aladhan (preferred) ----------
+    // You can change `API_METHOD` to another calculation method if needed.
+    const API_METHOD = 2; // default method; adjust for your country if required
+
+    async function fetchPrayerTimesFromApi(date) {
+        try {
+            const timestamp = Math.floor(date.getTime() / 1000);
+            const url = `https://api.aladhan.com/v1/timings/${timestamp}?latitude=${LATITUDE}&longitude=${LONGITUDE}&method=${API_METHOD}`;
+            const resp = await fetch(url, { cache: 'no-store' });
+            if (!resp.ok) throw new Error('API response ' + resp.status);
+            const j = await resp.json();
+            if (!j || !j.data || !j.data.timings) throw new Error('Invalid API payload');
+            const t = j.data.timings;
+            // Create Date objects in local timezone from timing strings
+            const makeDateFromTime = (timeStr) => {
+                if (!timeStr) return null;
+                // Remove possible ( +00 ) suffixes
+                timeStr = timeStr.split(' ')[0];
+                const [hh, mm] = timeStr.split(':').map(Number);
+                return new Date(date.getFullYear(), date.getMonth(), date.getDate(), hh, mm, 0);
+            };
+            return {
+                fajr: makeDateFromTime(t.Fajr || t.FAJR),
+                sunrise: makeDateFromTime(t.Sunrise || t.SUNRISE),
+                dhuhr: makeDateFromTime(t.Dhuhr || t.DHUHR),
+                asr: makeDateFromTime(t.Asr || t.ASR),
+                maghrib: makeDateFromTime(t.Maghrib || t.MAGHRIB),
+                isha: makeDateFromTime(t.Isha || t.ISHA),
+                raw: j.data
+            };
+        } catch (e) {
+            console.warn('fetchPrayerTimesFromApi failed:', e);
+            return null;
+        }
+    }
+
+    // Global state
+    let prayerList = [];          // { nameEn, nameId, time, iqamaTime, formattedTime, formattedIqama }
+    let currentDateStr = '';
+    let currentHighlightedPrayer = null;
+
+    async function refreshPrayerTimes() {
+        const now = getNow();
+        const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+        // Try online API first
+        let times = await fetchPrayerTimesFromApi(todayDate);
+
+        // If API failed, fall back to Adhan.js
+        if (!times) {
+            const adhanTimes = getPrayerTimesWithAdhan(todayDate);
+            if (adhanTimes) {
+                times = {
+                    fajr: adhanTimes.fajr,
+                    sunrise: adhanTimes.sunrise,
+                    dhuhr: adhanTimes.dhuhr,
+                    asr: adhanTimes.asr,
+                    maghrib: adhanTimes.maghrib,
+                    isha: adhanTimes.isha
+                };
+            }
+        }
+
+        // If still no times, return false
+        if (!times) return false;
+
+        prayerList = [];
+        for (let nameEn of PRAYER_NAMES_EN) {
+            let prayerTime = null;
+            switch (nameEn) {
+                case 'Fajr': prayerTime = times.fajr; break;
+                case 'Sunrise': prayerTime = times.sunrise; break;
+                case 'Dhuhr': prayerTime = times.dhuhr; break;
+                case 'Asr': prayerTime = times.asr; break;
+                case 'Maghrib': prayerTime = times.maghrib; break;
+                case 'Isha': prayerTime = times.isha; break;
+            }
+            if (prayerTime) {
+                const iqamaTime = getIqamaTime(prayerTime, nameEn);
+                prayerList.push({
+                    nameEn: nameEn,
+                    nameId: PRAYER_NAMES_ID[nameEn],
+                    time: prayerTime,
+                    iqamaTime: iqamaTime,
+                    formattedTime: formatPrayerTime24(prayerTime),
+                    formattedIqama: iqamaTime ? formatPrayerTime24(iqamaTime) : null
+                });
+            }
+        }
+        return true;
+    }
+
+    function getTomorrowFajr() {
+        // Try to compute tomorrow's Fajr using online API, then Adhan, then fallbacks
+        const tomorrow = new Date(getNow().getTime());
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        tomorrow.setHours(0, 0, 0, 0);
+
+        // try API
+        // Note: fetchPrayerTimesFromApi is async; call synchronously via Promise handling
+        // since this function is called from sync code, attempt quick synchronous fallbacks.
+        // First try Adhan (sync)
+        const adhanTimes = getPrayerTimesWithAdhan(tomorrow);
+        if (adhanTimes && adhanTimes.fajr) return adhanTimes.fajr;
+
+        // fallback: if today's fajr exists in prayerList, use it + 24h
+        const todayFajrObj = prayerList.find(p => p.nameEn === 'Fajr' && p.time);
+        if (todayFajrObj && todayFajrObj.time) {
+            return new Date(todayFajrObj.time.getTime() + 24 * 60 * 60 * 1000);
+        }
+
+        // final fallback: default to 04:30 next day (local time)
+        const fallback = new Date(getNow().getTime());
+        fallback.setDate(fallback.getDate() + 1);
+        fallback.setHours(4, 30, 0, 0);
+        return fallback;
+    }
+
+    function findNextPrayer(currentTime) {
+        const obligatoryPrayers = prayerList.filter(p => OBLIGATORY_EN.includes(p.nameEn) && p.time);
+        let next = null;
+        for (let p of obligatoryPrayers) {
+            if (p.time > currentTime) {
+                next = p;
+                break;
+            }
+        }
+        if (!next) {
+            const tomorrowFajr = getTomorrowFajr();
+            // always set tomorrow fajr (getTomorrowFajr now guarantees a Date)
+            next = { nameEn: "Fajr", nameId: "Subuh", time: tomorrowFajr, isTomorrow: true };
+        }
+        return next;
+    }
+
+    function renderPrayerGrid() {
+        const grid = document.getElementById('prayerTimesGrid');
+        if (!prayerList.length) {
+            grid.innerHTML = '<div style="text-align:center; grid-column: span 6;">Memuat jadwal sholat...</div>';
+            return;
+        }
+        grid.innerHTML = '';
+        for (let p of prayerList) {
+            const isSunrise = p.nameEn === 'Sunrise';
+            let iqamaHtml = '';
+            if (!isSunrise && p.formattedIqama) {
+                iqamaHtml = `<div class="iqama-time"><span class="iqama-label">Iqamah:</span> ${p.formattedIqama}</div>`;
+            } else if (isSunrise) {
+                iqamaHtml = `<div class="no-iqama"><span>✨ Terbit ✨</span></div>`;
+            } else {
+                iqamaHtml = `<div class="no-iqama">—</div>`;
+            }
+            const card = document.createElement('div');
+            card.className = 'prayer-card';
+            card.setAttribute('data-prayer-name', p.nameEn.toLowerCase());
+            card.innerHTML = `
+                <div class="prayer-name">${p.nameId.toUpperCase()}</div>
+                <div class="prayer-time">${p.formattedTime}</div>
+                ${iqamaHtml}
+            `;
+            grid.appendChild(card);
+        }
+        if (currentHighlightedPrayer) {
+            updateHighlightedPrayer(currentHighlightedPrayer);
+        }
+    }
+
+    function updateHighlightedPrayer(prayerNameEn) {
+        if (!prayerNameEn) return;
+        const cards = document.querySelectorAll('.prayer-card');
+        let found = false;
+        cards.forEach(card => {
+            const cardName = card.getAttribute('data-prayer-name');
+            if (cardName === prayerNameEn.toLowerCase()) {
+                card.classList.add('highlight');
+                found = true;
+            } else {
+                card.classList.remove('highlight');
+            }
+        });
+        if (found) {
+            currentHighlightedPrayer = prayerNameEn;
+        } else {
+            currentHighlightedPrayer = prayerNameEn;
+        }
+    }
+
+    // Fallback statis jika Adhan gagal
+    function setupFallback() {
+        console.warn("Menggunakan jadwal statis cadangan");
+        const now = getNow();
+        const staticTimes = {
+            "Fajr": "04:30", "Sunrise": "05:45", "Dhuhr": "11:45",
+            "Asr": "15:00", "Maghrib": "17:45", "Isha": "19:00"
+        };
+        prayerList = [];
+        for (let nameEn of PRAYER_NAMES_EN) {
+            let timeStr = staticTimes[nameEn];
+            let [hour, minute] = timeStr.split(':').map(Number);
+            let prayerDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute, 0);
+            if (nameEn === "Asr" && hour < 12) prayerDate.setHours(hour + 12);
+            if (nameEn === "Maghrib" && hour < 12) prayerDate.setHours(hour + 12);
+            if (nameEn === "Isha" && hour < 12) prayerDate.setHours(hour + 12);
+            prayerDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), prayerDate.getHours(), minute, 0);
+            const iqamaTime = getIqamaTime(prayerDate, nameEn);
+            prayerList.push({
+                nameEn: nameEn,
+                nameId: PRAYER_NAMES_ID[nameEn],
+                time: prayerDate,
+                iqamaTime: iqamaTime,
+                formattedTime: formatPrayerTime24(prayerDate),
+                formattedIqama: iqamaTime ? formatPrayerTime24(iqamaTime) : null
+            });
+        }
+        renderPrayerGrid();
+    }
+
+    let updateInterval;
+    let lastNextPrayerEn = '';
+
+    async function updateUI() {
+        const now = getNow();
+
+        document.getElementById('liveClock').innerText = formatCurrentTime24(now);
+        document.getElementById('gregorianDate').innerText = getGregorianFormatted();
+        document.getElementById('hijriDate').innerText = getHijriFormatted();
+
+        const todayStr = now.toDateString();
+        if (currentDateStr !== todayStr) {
+            currentDateStr = todayStr;
+            const success = await refreshPrayerTimes();
+            if (success) renderPrayerGrid();
+            else setupFallback();
+        }
+
+        const next = findNextPrayer(now);
+        let nextNameId = '';
+        let nextNameEn = '';
+        if (next) {
+            nextNameEn = next.nameEn;
+            nextNameId = next.isTomorrow ? `Subuh (Besok)` : next.nameId;
+            document.getElementById('nextPrayerName').innerText = nextNameId.toUpperCase();
+            const diffMs = next.time - now;
+            if (diffMs > 0) {
+                const totalSec = Math.floor(diffMs / 1000);
+                const hrs = Math.floor(totalSec / 3600);
+                const mins = Math.floor((totalSec % 3600) / 60);
+                const secs = totalSec % 60;
+                document.getElementById('hours').innerText = hrs.toString().padStart(2, '0');
+                document.getElementById('minutes').innerText = mins.toString().padStart(2, '0');
+                document.getElementById('seconds').innerText = secs.toString().padStart(2, '0');
+            } else {
+                document.getElementById('hours').innerText = '00';
+                document.getElementById('minutes').innerText = '00';
+                document.getElementById('seconds').innerText = '00';
+            }
+            if (nextNameEn !== lastNextPrayerEn) {
+                updateHighlightedPrayer(nextNameEn);
+                lastNextPrayerEn = nextNameEn;
+            }
+        } else {
+            document.getElementById('nextPrayerName').innerText = "SHOLAT";
+            document.getElementById('hours').innerText = '00';
+            document.getElementById('minutes').innerText = '00';
+            document.getElementById('seconds').innerText = '00';
+            if (lastNextPrayerEn) {
+                updateHighlightedPrayer(null);
+                lastNextPrayerEn = '';
+            }
+        }
+    }
+
+    function init() {
+        (async () => {
+            let success = await refreshPrayerTimes();
+            if (success && prayerList.length) {
+                renderPrayerGrid();
+            } else {
+                setupFallback();
+            }
+            currentDateStr = getNow().toDateString();
+            await updateUI();
+        })();
+        if (updateInterval) clearInterval(updateInterval);
+        updateInterval = setInterval(updateUI, 1000);
+    }
+
+    if (typeof Adhan !== 'undefined') {
+        init();
+    } else {
+        window.addEventListener('load', () => {
+            if (typeof Adhan === 'undefined') {
+                setupFallback();
+                currentDateStr = getNow().toDateString();
+                updateUI();
+                updateInterval = setInterval(updateUI, 1000);
+            } else {
+                init();
+            }
+        });
+    }
+</script>
+</body>
+</html>
