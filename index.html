@@ -6,7 +6,7 @@
     <meta name="google" content="notranslate">
     <title>Musholla An-Nahl - Jadwal Sholat (Surabaya)</title>
     <!-- Adhan.js library -->
-    <script src="https://cdn.jsdelivr.net/npm/adhan@4.5.0/dist/adhan.umd.js"></script>
+    <!-- Adhan.js will be loaded via dynamic import below -->
     <style>
         * {
             margin: 0;
@@ -393,7 +393,10 @@
     // Local fallback using Adhan.js (kept for reliability)
     function getPrayerTimesWithAdhan(date) {
         try {
-            const params = new Adhan.CalculationParameters('Kemenag', FAJR_ANGLE, ISHA_ANGLE);
+            const params = Adhan.CalculationMethod.Other();
+            params.fajrAngle = FAJR_ANGLE;
+            params.ishaAngle = ISHA_ANGLE;
+            params.madhab = Adhan.Madhab.Shafi;
             const coordinates = new Adhan.Coordinates(LATITUDE, LONGITUDE);
             const prayerTimes = new Adhan.PrayerTimes(coordinates, date, params);
             return prayerTimes;
@@ -405,7 +408,7 @@
 
     // ---------- Online API: Aladhan (preferred) ----------
     // You can change `API_METHOD` to another calculation method if needed.
-    const API_METHOD = 2; // default method; adjust for your country if required
+    const API_METHOD = 11; // Singapura (Fajr 20°, Isya 18°) — sesuai Kemenag RI
 
     async function fetchPrayerTimesFromApi(date) {
         try {
@@ -690,20 +693,18 @@
         updateInterval = setInterval(updateUI, 1000);
     }
 
-    if (typeof Adhan !== 'undefined') {
-        init();
-    } else {
-        window.addEventListener('load', () => {
-            if (typeof Adhan === 'undefined') {
-                setupFallback();
-                currentDateStr = getNow().toDateString();
-                updateUI();
-                updateInterval = setInterval(updateUI, 1000);
-            } else {
-                init();
+    // Load Adhan.js via dynamic import (CDN v4 tidak punya UMD build)
+    (async () => {
+        if (typeof Adhan === 'undefined' || typeof Adhan.CalculationMethod === 'undefined') {
+            try {
+                const mod = await import('https://cdn.jsdelivr.net/npm/adhan@4/lib/esm/Adhan.js');
+                window.Adhan = mod;
+            } catch (e) {
+                console.warn('Gagal memuat Adhan.js, fallback ke API online:', e);
             }
-        });
-    }
+        }
+        init();
+    })();
 </script>
 </body>
 </html>
