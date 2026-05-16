@@ -35,13 +35,27 @@ chown -R kiosk:kiosk /home/kiosk
 #EndSection
 #EOF
 
+# create .xprofile to disable sleep screen
+if [ -e "/home/kiosk/.xprofile" ]; then
+  mv /home/kiosk/.xprofile /home/kiosk/.xprofile.backup
+fi
+cat > /home/kiosk/.xprofile << EOF
+#!/bin/sh
+xset s off
+xset -dpms
+xset s noblank
+xset dpms 0 0 0
+EOF
+
+chmod +x /home/kiosk/.xprofile
+
 # create config
 if [ -e "/etc/lightdm/lightdm.conf" ]; then
   mv /etc/lightdm/lightdm.conf /etc/lightdm/lightdm.conf.backup
 fi
 cat > /etc/lightdm/lightdm.conf << EOF
 [Seat:*]
-xserver-command=X -nocursor -nolisten tcp
+xserver-command=X -nocursor -nolisten tcp -s 0 -dpms
 autologin-user=kiosk
 autologin-session=openbox
 EOF
