@@ -1,5 +1,5 @@
 #!/bin/bash
-
+export DISPLAY=:0
 KIOSK_URL="index.html"
 
 unclutter -idle 0.1 -grab -root &
