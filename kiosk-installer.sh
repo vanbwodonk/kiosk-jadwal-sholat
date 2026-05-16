@@ -87,6 +87,10 @@ do
     --disable-save-password-bubble \
     --disable-session-crashed-bubble \
     --incognito \
+    --use-gl=egl \
+    --enable-gpu-rasterization \
+    --enable-zero-copy \
+    --ignore-gpu-blocklist \
     --kiosk $KIOSK_URL
   sleep 3600
 done &
